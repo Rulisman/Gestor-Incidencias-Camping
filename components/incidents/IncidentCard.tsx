@@ -1,6 +1,6 @@
 import React from 'react';
 import { Incident, Priority, Status, Category } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 
 interface IncidentCardProps {
   incident: Incident;
