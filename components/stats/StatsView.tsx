@@ -1,6 +1,6 @@
 import React from 'react';
 import { Incident, Category, Priority, Status } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 
 interface StatsViewProps {
   incidents: Incident[];
