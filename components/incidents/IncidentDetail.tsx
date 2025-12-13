@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Incident, Priority, Status, Category, Comment, UserRole } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 import { suggestSolution } from '../../services/gemini';
 
 interface IncidentDetailProps {
