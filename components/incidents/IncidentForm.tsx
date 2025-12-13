@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Priority, Category, AIAnalysisResult } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 import { analyzeIncidentDescription } from '../../services/gemini';
 
 interface IncidentFormProps {
