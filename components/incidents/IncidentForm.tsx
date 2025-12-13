@@ -53,10 +53,10 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-2xl w-full mx-auto animate-fade-in border-t-4 border-emerald-600">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-2xl w-full mx-auto animate-fade-in border-t-4 border-[#0054a6]">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <div className="bg-emerald-100 p-2 rounded-lg text-emerald-700"><Icons.Add size={24} /></div>
+            <div className="bg-blue-50 p-2 rounded-lg text-[#0054a6]"><Icons.Add size={24} /></div>
             Nueva Incidencia
         </h2>
         <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -80,7 +80,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
                         required
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#0054a6] focus:border-[#0054a6] transition-all"
                         placeholder="ej. Bungalow 42, Piscina..."
                     />
                 </div>
@@ -93,7 +93,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#0054a6] focus:border-[#0054a6] transition-all"
                     placeholder="Resumen breve"
                  />
             </div>
@@ -108,17 +108,17 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all min-h-[120px]"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#0054a6] focus:border-[#0054a6] transition-all min-h-[120px]"
               placeholder="Describe qué ha sucedido, qué falla, etc..."
             />
             <button
                 type="button"
                 onClick={handleAIAnalysis}
                 disabled={isAnalyzing || description.length < 5}
-                className="absolute bottom-3 right-3 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors disabled:opacity-50 font-medium shadow-sm"
+                className="absolute bottom-3 right-3 text-xs bg-blue-50 text-[#0054a6] hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors disabled:opacity-50 font-medium shadow-sm"
             >
                 {isAnalyzing ? (
-                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-600"></span>
+                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#0054a6]"></span>
                 ) : (
                     <Icons.Magic size={12} />
                 )}
@@ -129,11 +129,11 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
 
         {/* AI Suggestions Panel */}
         {aiSuggestions.length > 0 && (
-            <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100 animate-fade-in">
-                <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-100 animate-fade-in">
+                <h4 className="text-xs font-bold text-[#0054a6] uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Icons.Magic size={12} /> Sugerencias Iniciales
                 </h4>
-                <ul className="text-sm text-emerald-900 list-disc list-inside space-y-1">
+                <ul className="text-sm text-blue-900 list-disc list-inside space-y-1">
                     {aiSuggestions.map((step, idx) => (
                         <li key={idx}>{step}</li>
                     ))}
@@ -148,7 +148,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
                 <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none bg-white font-medium text-slate-700"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#0054a6] focus:border-[#0054a6] appearance-none bg-white font-medium text-slate-700"
                 >
                 {Object.values(Category).map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -176,7 +176,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
                         onClick={() => setPriority(p)}
                         className={`flex-1 py-2.5 px-1 rounded-lg text-xs md:text-sm font-bold transition-all border ${
                             priority === p 
-                            ? 'bg-slate-800 text-white border-slate-800 shadow-md' 
+                            ? 'bg-[#0054a6] text-white border-[#0054a6] shadow-md' 
                             : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                         }`}
                     >
@@ -197,7 +197,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, onCancel }
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all transform active:scale-95 flex items-center gap-2"
+            className="px-6 py-2.5 rounded-lg bg-[#0054a6] text-white font-bold hover:bg-[#004080] shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex items-center gap-2"
           >
             <Icons.Check size={18} />
             Crear Incidencia

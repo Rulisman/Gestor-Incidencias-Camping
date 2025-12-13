@@ -23,7 +23,9 @@ import {
   Droplets,      // Sanitarios
   MapPin,        // Lugar
   User,
-  Download       // Exportar
+  Download,      // Exportar
+  Users,         // Gestión Usuarios
+  Lock           // Password
 } from 'lucide-react';
 
 export const Icons = {
@@ -51,5 +53,7 @@ export const Icons = {
   Sanitarios: Droplets,
   Location: MapPin,
   User: User,
-  Download: Download
+  Download: Download,
+  Users: Users,
+  Lock: Lock
 };

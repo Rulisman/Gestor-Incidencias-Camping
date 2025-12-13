@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from './components/ui/Icons';
 import { IncidentCard } from './components/incidents/IncidentCard';
 import { IncidentForm } from './components/incidents/IncidentForm';
 import { IncidentDetail } from './components/incidents/IncidentDetail';
 import { StatsView } from './components/stats/StatsView';
-import { Incident, Priority, Status, Category, Comment } from './types';
+import { UserList } from './components/admin/UserList';
+import { Login } from './components/auth/Login';
+import { Incident, Priority, Status, Category, Comment, User, Department, UserRole, StatusHistory } from './types';
 
-// Mock initial data - Camping Context
-const INITIAL_INCIDENTS: Incident[] = [
+// Mock initial data - Fallback si no hay localStorage
+const INITIAL_INCIDENTS_MOCK: Incident[] = [
   {
     id: 'INC-2024-001',
     title: 'Fallo eléctrico en Bungalow',
@@ -15,11 +17,13 @@ const INITIAL_INCIDENTS: Incident[] = [
     location: 'Bungalow Deluxe 42',
     priority: Priority.ALTA,
     status: Status.PENDIENTE,
+    statusHistory: [], // Inicializar vacío
     category: Category.BUNGALOWS,
-    createdAt: new Date(Date.now() - 3600000 * 2), // 2 hours ago
+    createdAt: new Date(Date.now() - 3600000 * 2), 
     creationDate: new Date(Date.now() - 3600000 * 2),
     updatedAt: new Date(),
     reporter: 'Recepción',
+    reporterDepartment: Department.RECEPCION,
     comments: [
         { id: 'c1', author: 'Jefe Mtto', text: 'Enviando a electricista de guardia.', timestamp: new Date(Date.now() - 3600000) }
     ]
@@ -31,38 +35,150 @@ const INITIAL_INCIDENTS: Incident[] = [
     location: 'Baños Piscina Infantil',
     priority: Priority.MEDIA,
     status: Status.EN_PROCESO,
+    statusHistory: [
+        {
+            id: 'h1',
+            previousStatus: Status.PENDIENTE,
+            newStatus: Status.EN_PROCESO,
+            changedBy: 'Raul',
+            timestamp: new Date(Date.now() - 43200000)
+        }
+    ],
     category: Category.SANITARIOS,
-    createdAt: new Date(Date.now() - 86400000), // 1 day ago
+    createdAt: new Date(Date.now() - 86400000),
     creationDate: new Date(Date.now() - 86400000),
     updatedAt: new Date(),
     reporter: 'Limpieza',
-    comments: []
-  },
-  {
-    id: 'INC-2024-003',
-    title: 'Rama caída obstaculizando paso',
-    description: 'Ha caído una rama grande de pino en el camino principal hacia la zona de Glamping.',
-    location: 'Camino Glamping sector B',
-    priority: Priority.BAJA,
-    status: Status.PENDIENTE,
-    category: Category.PARCELAS,
-    createdAt: new Date(Date.now() - 1800000), // 30 mins ago
-    creationDate: new Date(Date.now() - 1800000),
-    updatedAt: new Date(),
-    reporter: 'Jardinería',
+    reporterDepartment: Department.LIMPIEZA,
     comments: []
   }
 ];
 
-type ViewState = 'dashboard' | 'create' | 'detail' | 'stats';
+// Helper para recuperar fechas correctamente del JSON
+const loadIncidentsFromStorage = (): Incident[] => {
+  const saved = localStorage.getItem('camping_incidents');
+  if (!saved) return INITIAL_INCIDENTS_MOCK;
+
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed.map((item: any) => ({
+      ...item,
+      createdAt: new Date(item.createdAt),
+      creationDate: new Date(item.creationDate),
+      updatedAt: new Date(item.updatedAt),
+      comments: item.comments.map((c: any) => ({
+        ...c,
+        timestamp: new Date(c.timestamp)
+      })),
+      // Mapear historial de estados recuperando fechas
+      statusHistory: item.statusHistory ? item.statusHistory.map((h: any) => ({
+          ...h,
+          timestamp: new Date(h.timestamp)
+      })) : []
+    }));
+  } catch (e) {
+    console.error("Error loading incidents", e);
+    return INITIAL_INCIDENTS_MOCK;
+  }
+};
+
+const loadUserFromStorage = (): User | null => {
+  const saved = localStorage.getItem('camping_current_user');
+  return saved ? JSON.parse(saved) : null;
+};
+
+const loadUserRegistryFromStorage = (): User[] => {
+    const saved = localStorage.getItem('camping_users_db');
+    if (saved) return JSON.parse(saved);
+    
+    // Usuario por defecto (Raul - Admin)
+    return [{
+        name: 'Raul',
+        email: 'info@playabrava.com',
+        password: 'admin123', // Contraseña por defecto
+        department: Department.RECEPCION,
+        role: 'ADMIN'
+    }];
+};
+
+type ViewState = 'dashboard' | 'create' | 'detail' | 'stats' | 'users';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(loadUserFromStorage);
+  const [userRegistry, setUserRegistry] = useState<User[]>(loadUserRegistryFromStorage);
+  
   const [view, setView] = useState<ViewState>('dashboard');
-  const [incidents, setIncidents] = useState<Incident[]>(INITIAL_INCIDENTS);
+  const [incidents, setIncidents] = useState<Incident[]>(loadIncidentsFromStorage);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Status | 'Todos'>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [logoError, setLogoError] = useState(false);
   
+  // Persistencia de incidencias
+  useEffect(() => {
+    localStorage.setItem('camping_incidents', JSON.stringify(incidents));
+  }, [incidents]);
+
+  // Persistencia de sesión actual
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('camping_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('camping_current_user');
+    }
+  }, [currentUser]);
+
+  // Persistencia del registro de usuarios
+  useEffect(() => {
+    localStorage.setItem('camping_users_db', JSON.stringify(userRegistry));
+  }, [userRegistry]);
+
+  // Manejo de Login Seguro
+  const validateCredentials = (email: string, passwordAttempt: string): User | null => {
+    const emailLower = email.toLowerCase();
+    
+    // Buscar usuario
+    const user = userRegistry.find(u => u.email.toLowerCase() === emailLower);
+    
+    if (user && user.password === passwordAttempt) {
+        return user;
+    }
+    
+    return null;
+  };
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setView('dashboard');
+  };
+
+  const handleUpdateUserRole = (email: string, newRole: UserRole) => {
+    if (currentUser?.role !== 'ADMIN') return;
+    
+    // No permitir quitar admin a info@playabrava.com
+    if (email === 'info@playabrava.com') return;
+
+    setUserRegistry(prev => prev.map(u => 
+        u.email === email ? { ...u, role: newRole } : u
+    ));
+  };
+
+  const handleCreateUser = (newUser: User) => {
+    if (currentUser?.role !== 'ADMIN') return;
+
+    // Verificar si ya existe
+    if (userRegistry.some(u => u.email.toLowerCase() === newUser.email.toLowerCase())) {
+        alert('Este email ya está registrado.');
+        return;
+    }
+
+    setUserRegistry(prev => [...prev, newUser]);
+  };
+
   // Dashboard Metrics
   const openCount = incidents.filter(i => i.status === Status.PENDIENTE).length;
   const criticalCount = incidents.filter(i => i.priority === Priority.CRITICA || i.priority === Priority.ALTA).length;
@@ -84,10 +200,12 @@ function App() {
       id: `INC-2024-${String(incidents.length + 1).padStart(3, '0')}`,
       ...data,
       status: Status.PENDIENTE,
+      statusHistory: [],
       createdAt: new Date(),
       creationDate: new Date(),
       updatedAt: new Date(),
-      reporter: 'Usuario Actual',
+      reporter: currentUser ? currentUser.name : 'Desconocido',
+      reporterDepartment: currentUser?.department,
       comments: []
     };
     setIncidents([newIncident, ...incidents]);
@@ -99,10 +217,33 @@ function App() {
     setView('detail');
   };
 
-  const handleUpdateStatus = (id: string, status: Status) => {
-    setIncidents(incidents.map(inc => 
-      inc.id === id ? { ...inc, status, updatedAt: new Date() } : inc
-    ));
+  const handleUpdateStatus = (id: string, newStatus: Status) => {
+    // Doble verificación de seguridad
+    if (currentUser?.role !== 'ADMIN') return;
+
+    setIncidents(prevIncidents => prevIncidents.map(inc => {
+      if (inc.id === id) {
+        // Si el estado es el mismo, no hacemos nada
+        if (inc.status === newStatus) return inc;
+
+        // Crear registro histórico
+        const historyEntry: StatusHistory = {
+            id: Date.now().toString(),
+            previousStatus: inc.status,
+            newStatus: newStatus,
+            changedBy: currentUser.name,
+            timestamp: new Date()
+        };
+
+        return { 
+            ...inc, 
+            status: newStatus, 
+            updatedAt: new Date(),
+            statusHistory: [...(inc.statusHistory || []), historyEntry] // Añadir al historial
+        };
+      }
+      return inc;
+    }));
   };
 
   const handleAddComment = (id: string, text: string) => {
@@ -110,7 +251,7 @@ function App() {
       if (inc.id === id) {
         const newComment: Comment = {
           id: Date.now().toString(),
-          author: 'Usuario Actual',
+          author: currentUser ? currentUser.name : 'Usuario',
           text,
           timestamp: new Date()
         };
@@ -119,6 +260,11 @@ function App() {
       return inc;
     }));
   };
+
+  // Si no hay usuario logueado, mostrar login
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} validateCredentials={validateCredentials} />;
+  }
 
   const renderContent = () => {
     if (view === 'create') {
@@ -138,6 +284,7 @@ function App() {
         return (
             <IncidentDetail 
                 incident={incident}
+                userRole={currentUser.role}
                 onBack={() => setView('dashboard')}
                 onUpdateStatus={handleUpdateStatus}
                 onAddComment={handleAddComment}
@@ -147,6 +294,17 @@ function App() {
 
     if (view === 'stats') {
         return <StatsView incidents={incidents} />;
+    }
+
+    if (view === 'users' && currentUser.role === 'ADMIN') {
+        return (
+            <UserList 
+                users={userRegistry} 
+                currentUserEmail={currentUser.email}
+                onUpdateRole={handleUpdateUserRole}
+                onCreateUser={handleCreateUser}
+            />
+        );
     }
 
     return (
@@ -173,7 +331,7 @@ function App() {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-slate-500 mb-1">Resueltas (Semana)</p>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Resueltas (Total)</p>
                         <h3 className="text-3xl font-bold text-slate-800">{resolvedCount}</h3>
                     </div>
                     <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
@@ -191,7 +349,7 @@ function App() {
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition duration-150 ease-in-out shadow-sm"
+                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0054a6] focus:border-[#0054a6] sm:text-sm transition duration-150 ease-in-out shadow-sm"
                             placeholder="Buscar por título, lugar o descripción..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -200,7 +358,7 @@ function App() {
 
                     <button 
                         onClick={() => setView('create')}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 whitespace-nowrap"
+                        className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0054a6] text-white rounded-lg font-bold hover:bg-[#004080] shadow-lg shadow-blue-200 transition-all active:scale-95 whitespace-nowrap"
                     >
                         <Icons.Add size={18} />
                         Reportar Incidencia
@@ -214,7 +372,7 @@ function App() {
                             onClick={() => setFilterStatus(status as Status | 'Todos')}
                             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                                 filterStatus === status 
-                                ? 'bg-slate-800 text-white' 
+                                ? 'bg-[#0054a6] text-white' 
                                 : 'text-slate-600 hover:bg-slate-50'
                             }`}
                         >
@@ -249,13 +407,23 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col fixed h-full z-10 border-r border-slate-800">
+        <aside className="w-64 bg-[#0054a6] text-white hidden md:flex flex-col fixed h-full z-10 border-r border-[#004080]">
             <div className="p-6">
-                <div className="flex items-center gap-3 text-white font-bold text-xl mb-8">
-                    <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-900">
-                        <Icons.Parcelas size={18} />
+                <div className="flex items-center gap-3 text-white font-bold text-lg mb-8 leading-tight">
+                    <div className="w-10 h-10 bg-white rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
+                         {/* Logo con sistema de Fallback */}
+                         {!logoError ? (
+                            <img 
+                                src="https://www.playabrava.com/wp-content/themes/playabrava/img/logo.png" 
+                                alt="Logo" 
+                                className="w-full h-auto object-contain"
+                                onError={() => setLogoError(true)}
+                            />
+                         ) : (
+                            <Icons.Glamping size={24} className="text-[#0054a6]" />
+                         )}
                     </div>
-                    Gestor Camping
+                    <span className="text-sm">Gestor Incidencias</span>
                 </div>
                 <nav className="space-y-2">
                     <button 
@@ -263,34 +431,51 @@ function App() {
                             setView('dashboard');
                             setFilterStatus('Todos');
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'dashboard' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'}`}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'dashboard' ? 'bg-[#004080] text-white shadow-inner' : 'hover:bg-[#004080]'}`}
                     >
                         <Icons.Dashboard size={18} />
                         Tablero
                     </button>
                     <button 
                         onClick={() => setView('stats')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'stats' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'}`}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'stats' ? 'bg-[#004080] text-white shadow-inner' : 'hover:bg-[#004080]'}`}
                     >
                         <Icons.Chart size={18} />
                         Estadísticas
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors">
-                        <Icons.Parcelas size={18} />
-                        Mapa Camping
-                    </button>
+                    {/* Botón solo para Admins */}
+                    {currentUser.role === 'ADMIN' && (
+                        <button 
+                            onClick={() => setView('users')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'users' ? 'bg-[#004080] text-white shadow-inner' : 'hover:bg-[#004080]'}`}
+                        >
+                            <Icons.Users size={18} />
+                            Usuarios
+                        </button>
+                    )}
                 </nav>
             </div>
-            <div className="mt-auto p-6 border-t border-slate-800">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
-                        MA
-                    </div>
-                    <div>
-                        <p className="text-white text-sm font-medium">Mantenimiento</p>
-                        <p className="text-xs text-slate-500">Admin</p>
+            <div className="mt-auto p-6 border-t border-[#004080]">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#004080] flex items-center justify-center text-white font-bold text-sm border border-white/20">
+                            {currentUser.name.substring(0,2).toUpperCase()}
+                        </div>
+                        <div className="overflow-hidden">
+                            <p className="text-white text-sm font-medium truncate w-32 flex items-center gap-2">
+                                {currentUser.name} 
+                                {currentUser.role === 'ADMIN' && <Icons.Glamping size={12} className="text-yellow-400" />}
+                            </p>
+                            <p className="text-xs text-blue-200 truncate w-32">{currentUser.department}</p>
+                        </div>
                     </div>
                 </div>
+                <button 
+                    onClick={handleLogout}
+                    className="w-full text-xs text-blue-200 hover:text-white transition-colors text-left flex items-center gap-2 px-1"
+                >
+                    <Icons.Close size={12} /> Cerrar Sesión
+                </button>
             </div>
         </aside>
 

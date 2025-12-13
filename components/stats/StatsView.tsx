@@ -78,12 +78,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ incidents }) => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Icons.Chart className="text-emerald-600" />
+            <Icons.Chart className="text-[#0054a6]" />
             Estadísticas del Camping
         </h2>
         <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors shadow-sm active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0054a6] text-white rounded-lg text-sm font-medium hover:bg-[#004080] transition-colors shadow-sm active:scale-95"
         >
             <Icons.Download size={16} />
             Exportar Reporte Excel (CSV)
@@ -110,7 +110,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ incidents }) => {
         {/* Category Distribution */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 pb-4 border-b border-slate-100">
-                <Icons.Dashboard size={20} className="text-emerald-600" />
+                <Icons.Dashboard size={20} className="text-[#0054a6]" />
                 Incidencias por Categoría
             </h3>
             <div className="space-y-5">
@@ -124,7 +124,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ incidents }) => {
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                             <div 
-                                className="bg-emerald-500 h-2.5 rounded-full transition-all duration-700 ease-out shadow-sm" 
+                                className="bg-[#0054a6] h-2.5 rounded-full transition-all duration-700 ease-out shadow-sm" 
                                 style={{ width: `${item.percentage}%` }}
                             ></div>
                         </div>

@@ -1,5 +1,5 @@
 {
-  "name": "Gestor Camping AI",
+  "name": "Gestor Incidencias Camping",
   "description": "Sistema inteligente de gestión de incidencias para campings con auto-categorización y sugerencias de mantenimiento vía Gemini AI.",
   "requestFramePermissions": []
 }
