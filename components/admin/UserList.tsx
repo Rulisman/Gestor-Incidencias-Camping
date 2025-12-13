@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, Department } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 
 interface UserListProps {
   users: User[];
