@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Icons } from './components/ui/Icons';
+import { Icons } from './components/ui/icons';
 import { IncidentCard } from './components/incidents/IncidentCard';
 import { IncidentForm } from './components/incidents/IncidentForm';
 import { IncidentDetail } from './components/incidents/IncidentDetail';
