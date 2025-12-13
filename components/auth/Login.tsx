@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../../types';
-import { Icons } from '../ui/Icons';
+import { Icons } from '../ui/icons';
 
 interface LoginProps {
   onLogin: (user: User) => void;
