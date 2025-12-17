@@ -144,26 +144,35 @@ function App() {
     return matchesStatus && matchesSearch;
   });
 
-  // --- CREAR INCIDENCIA (CONECTADO A SUPABASE) ---
+  // --- CREAR INCIDENCIA (CORREGIDO) ---
   const handleCreateIncident = async (datosFormulario: any) => {
+    // 🔍 DEBUG: Ver qué datos llegan realmente
+    console.log("Datos del formulario recibidos:", datosFormulario);
+
     try {
-      // 1. Enviamos a Supabase
       const { error } = await supabase
         .from('incidencias')
         .insert([
           { 
-            usuario: datosFormulario.usuario || currentUser?.name, 
-            lugar: datosFormulario.lugar, 
-            descripcion: datosFormulario.descripcion,
+            // AQUÍ ESTABA EL ERROR:
+            // La izquierda es SUPABASE (Español), la derecha es el FORMULARIO (Inglés)
+            
+            usuario: currentUser?.name || 'Anonimo', 
+            
+            // Antes ponías datosFormulario.lugar (y estaba vacío)
+            lugar: datosFormulario.location || datosFormulario.lugar, 
+            
+            // Aseguramos que descripción se coja bien
+            descripcion: datosFormulario.description || datosFormulario.descripcion,
+            
             estado: 'pendiente'
           },
         ]);
 
       if (error) throw error;
 
-      // 2. Éxito y Recarga
-      alert('✅ ¡Incidencia creada en la nube!');
-      await fetchIncidencias(); // <--- IMPORTANTE: Recargamos la lista
+      alert('✅ ¡Incidencia guardada correctamente!');
+      await fetchIncidencias(); 
       setView('dashboard');
 
     } catch (error: any) {
