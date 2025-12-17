@@ -74,7 +74,7 @@ function App() {
           creationDate: new Date(item.created_at),
           updatedAt: new Date(item.created_at),
           comments: [],
-          statusHistory: []
+          statusHistory: item.historial || [],
         }));
         setIncidents(adaptados);
       }
@@ -187,16 +187,66 @@ function App() {
       setView('detail');
   };
 
-  const handleUpdateStatus = (id: string, newStatus: Status) => {
-    // NOTA: Aquí deberías añadir también lógica de Supabase UPDATE en el futuro
+  // --- ACTUALIZAR ESTADO E HISTORIAL (CONECTADO A SUPABASE) ---
+  const handleUpdateStatus = async (id: string, newStatus: Status) => {
+    // 1. Seguridad: Solo admins
     if (currentUser?.role !== 'ADMIN') return;
-    setIncidents(prevIncidents => prevIncidents.map(inc => {
-      if (inc.id === id) {
-        if (inc.status === newStatus) return inc;
-        return { ...inc, status: newStatus, updatedAt: new Date() };
-      }
-      return inc;
-    }));
+
+    // 2. Buscamos la incidencia actual para coger su historial viejo
+    const incident = incidents.find(i => i.id === id);
+    if (!incident) return;
+    
+    // Si el estado es el mismo, no hacemos nada
+    if (incident.status === newStatus) return;
+
+    try {
+        // 3. Creamos la nueva entrada del historial
+        const newHistoryEntry = {
+            id: Date.now().toString(),
+            previousStatus: incident.status,
+            newStatus: newStatus,
+            changedBy: currentUser.name,
+            timestamp: new Date().toISOString() // Importante: formato texto para JSON
+        };
+
+        // 4. Calculamos el historial completo (Lo viejo + Lo nuevo)
+        // (Aseguramos que sea un array por si acaso viene null)
+        const currentHistory = Array.isArray(incident.statusHistory) ? incident.statusHistory : [];
+        const updatedHistory = [...currentHistory, newHistoryEntry];
+
+        // 5. ENVIAMOS A SUPABASE
+        const { error } = await supabase
+            .from('incidencias')
+            .update({ 
+                estado: newStatus === Status.PENDIENTE ? 'pendiente' : 'finalizada', // Adaptamos al formato simple de tu DB
+                historial: updatedHistory // Guardamos el array completo
+            })
+            .eq('id', id); // Solo actualizamos esta incidencia
+
+        if (error) throw error;
+
+        // 6. Actualizamos la pantalla (Local)
+        setIncidents(prevIncidents => prevIncidents.map(inc => {
+            if (inc.id === id) {
+                return { 
+                    ...inc, 
+                    status: newStatus, 
+                    updatedAt: new Date(),
+                    statusHistory: updatedHistory.map(h => ({
+                        ...h,
+                        timestamp: new Date(h.timestamp) // Recuperamos formato Fecha para la App
+                    }))
+                };
+            }
+            return inc;
+        }));
+
+        alert('✅ Estado actualizado correctamente');
+
+    } catch (error: any) {
+        console.error('Error actualizando:', error);
+        alert('❌ Error al actualizar estado: ' + error.message);
+    }
   };
 
   const handleAddComment = (id: string, text: string) => {
