@@ -358,6 +358,23 @@ function App() {
                         <Icons.Add size={18} /> Reportar Incidencia
                     </button>
                 </div>
+
+                {/* AQUÍ ES DONDE VA LO NUEVO QUE TE HE PASADO ARRIBA */}
+                <div className="flex gap-2 p-1 bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto max-w-full self-start">
+                    {['Todos', Status.PENDIENTE, Status.EN_PROCESO, Status.FINALIZADA].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setFilterStatus(status as Status | 'Todos')}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                                filterStatus === status 
+                                ? 'bg-[#0054a6] text-white' 
+                                : 'text-slate-600 hover:bg-slate-50'
+                            }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Lista de Incidencias */}
